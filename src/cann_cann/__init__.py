@@ -16,12 +16,9 @@ from .config import (
 from .errors import (
     CannCannError,
     CANNNotFoundError,
-    ConfigFieldUnavailableError,
-    InvalidUnitError,
     NPUDetectionError,
+    PlatformConfigError,
     PlatformConfigNotFoundError,
-    PlatformConfigParseError,
-    UnsupportedArchitectureError,
 )
 from .units import SizeUnit
 
@@ -35,7 +32,7 @@ def _default_platform_config_directory() -> Path:
 @cache
 def _platform_config_by_name(npu_name: str) -> CANNPlatformConfig:
     if not npu_name or Path(npu_name).name != npu_name:
-        raise PlatformConfigNotFoundError(f"Invalid NPU name: {npu_name!r}")
+        raise ValueError(f"Invalid NPU name: {npu_name!r}")
     path = _default_platform_config_directory() / f"{npu_name}.ini"
     return CANNPlatformConfig.from_file(path)
 
@@ -93,15 +90,12 @@ __all__ = [
     "CANNNotFoundError",
     "CANNPlatformConfig",
     "CannCannError",
-    "ConfigFieldUnavailableError",
-    "InvalidUnitError",
     "NPUDetectionError",
+    "PlatformConfigError",
     "PlatformConfigNotFoundError",
-    "PlatformConfigParseError",
     "PlatformConfigSection",
     "SizeUnit",
     "SoCInfoSection",
-    "UnsupportedArchitectureError",
     "VersionSection",
     "ai_core_count",
     "detect_npu_name",

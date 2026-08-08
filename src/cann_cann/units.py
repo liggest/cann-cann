@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Literal, TypeAlias
 
-from .errors import InvalidUnitError
-
 SizeUnit: TypeAlias = Literal["bytes", "kb", "kib", "mb", "mib"]
 
 _UNIT_DIVISORS: dict[str, int] = {
@@ -30,7 +28,7 @@ def convert_size(value: int, unit: SizeUnit | str = "bytes") -> int | float:
         divisor = _UNIT_DIVISORS[normalized_unit]
     except KeyError as error:
         choices = ", ".join(_UNIT_DIVISORS)
-        raise InvalidUnitError(f"Unsupported size unit {unit!r}; expected one of: {choices}") from error
+        raise ValueError(f"Unsupported size unit {unit!r}; expected one of: {choices}") from error
 
     quotient, remainder = divmod(value, divisor)
     if remainder == 0:

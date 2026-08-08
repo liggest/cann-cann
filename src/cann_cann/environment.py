@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 
-from .errors import CANNNotFoundError, NPUDetectionError, UnsupportedArchitectureError
+from .errors import CANNNotFoundError, NPUDetectionError
 
 _CANN_HOME_VARIABLES = (
     "ASCEND_HOME_PATH",
@@ -32,7 +32,7 @@ def normalize_architecture(machine: str | None = None) -> str:
     try:
         return _ARCHITECTURES[detected.strip().lower()]
     except KeyError as exc:
-        raise UnsupportedArchitectureError(f"Unsupported host architecture: {detected!r}.") from exc
+        raise CANNNotFoundError(f"CANN does not support the host architecture: {detected!r}.") from exc
 
 
 def platform_config_directory(cann_home: str | os.PathLike[str], *, machine: str | None = None) -> Path:

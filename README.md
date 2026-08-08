@@ -109,8 +109,11 @@ For compatibility with common accelerator tooling, `kb` and `kib` both mean
 ## Errors
 
 The Python API raises `CannCannError` subclasses when CANN cannot be found, an
-NPU name cannot be detected, a platform configuration is unavailable, or a
-query is invalid. The CLI prints the same errors in a concise form and exits
+NPU name cannot be detected, or a platform configuration cannot be used.
+Applications can normally catch this one base class; callers that need a
+fallback may catch `NPUDetectionError` or `PlatformConfigNotFoundError` more
+specifically. Invalid arguments, such as an unsupported unit, raise the
+standard `ValueError`. The CLI prints expected errors concisely and exits
 non-zero. If local detection is unavailable, pass an explicit NPU name:
 
 ```console

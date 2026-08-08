@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 import cann_cann
-from cann_cann.errors import ConfigFieldUnavailableError
+from cann_cann.errors import PlatformConfigError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "platform_config"
 
@@ -69,6 +69,12 @@ def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
     cann_cann._platform_config_by_name.cache_clear()
 
 
+@pytest.mark.parametrize("npu_name", ["", "../Ascend910B2", "foo/bar"])
+def test_invalid_npu_name_is_a_value_error(npu_name: str) -> None:
+    with pytest.raises(ValueError, match="Invalid NPU name"):
+        cann_cann.platform_config(npu_name)
+
+
 @pytest.mark.parametrize(
     ("function_name", "method_name"),
     [
@@ -98,5 +104,5 @@ def test_missing_convenience_field_has_domain_error(tmp_path: Path) -> None:
     )
     config = cann_cann.CANNPlatformConfig.from_file(path)
 
-    with pytest.raises(ConfigFieldUnavailableError, match="AICoreSpec.ub_size"):
+    with pytest.raises(PlatformConfigError, match="AICoreSpec.ub_size"):
         config.ub_size()

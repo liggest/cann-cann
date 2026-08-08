@@ -121,3 +121,13 @@ Ascend 910B、Ascend 910 93 系列、Ascend 950PR 和 Ascend 950DT 的平台配�
 - [x] 构建并检查 wheel 与 sdist。
 - [x] 根据实际完成情况更新本文件中的勾选状态。
 
+# cann-cann 初版实现微调
+
+初版完成后，将讨论中确认但不影响整体架构的改进记录在这里，逐项实现和验证。
+
+## 11. 简化异常设计
+
+- [x] 精简公开异常层级，使普通用户只需理解 `CannCannError`，需要恢复时再捕获少量环境或配置子类。
+- [x] 统一异常语义：调用参数和对象构造错误使用 `ValueError`，CANN 环境及平台配置错误使用领域异常。
+- [x] 让平台配置文件缺失同时兼容 `PlatformConfigError` 和 `FileNotFoundError`，并携带标准文件异常信息。
+- [x] 同步公共导出、README 和测试，并通过 Ruff、完整 pytest 及构建检查。

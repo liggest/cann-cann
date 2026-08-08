@@ -1,3 +1,5 @@
+import errno
+import os
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 
@@ -10,7 +12,7 @@ from cann_cann.config import (
     SoCInfoSection,
     VersionSection,
 )
-from cann_cann.errors import PlatformConfigNotFoundError
+from cann_cann.errors import PlatformConfigError, PlatformConfigNotFoundError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "platform_config"
 
@@ -83,13 +85,21 @@ def test_optional_fields_can_be_absent() -> None:
 
 
 def test_missing_file_has_domain_error(tmp_path: Path) -> None:
-    with pytest.raises(PlatformConfigNotFoundError):
-        CANNPlatformConfig.from_file(tmp_path / "missing.ini")
+    path = tmp_path / "missing.ini"
+
+    with pytest.raises(PlatformConfigNotFoundError) as caught:
+        CANNPlatformConfig.from_file(path)
+
+    assert isinstance(caught.value, FileNotFoundError)
+    assert isinstance(caught.value, PlatformConfigError)
+    assert caught.value.errno == errno.ENOENT
+    assert caught.value.strerror == "Platform configuration file not found"
+    assert caught.value.filename == os.fspath(path)
 
 
 def test_required_sections_are_validated(tmp_path: Path) -> None:
     path = tmp_path / "incomplete.ini"
     path.write_text("[version]\nSoC_version=Example\n", encoding="utf-8")
 
-    with pytest.raises(ValueError, match=r"\[SoCInfo\].*\[AICoreSpec\]"):
+    with pytest.raises(PlatformConfigError, match=r"\[SoCInfo\].*\[AICoreSpec\]"):
         CANNPlatformConfig.from_file(path)

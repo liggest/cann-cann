@@ -9,7 +9,6 @@ from cann_cann import environment
 from cann_cann.errors import (
     CANNNotFoundError,
     NPUDetectionError,
-    UnsupportedArchitectureError,
 )
 
 
@@ -33,7 +32,7 @@ def test_normalize_architecture(machine: str, expected: str) -> None:
 
 
 def test_normalize_architecture_rejects_unknown_value() -> None:
-    with pytest.raises(UnsupportedArchitectureError):
+    with pytest.raises(CANNNotFoundError, match="architecture"):
         environment.normalize_architecture("riscv64")
 
 

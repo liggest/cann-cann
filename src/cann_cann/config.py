@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import errno
+import os
 from collections.abc import Iterator, Mapping
 from configparser import ConfigParser
+from configparser import Error as ConfigParserError
 from dataclasses import dataclass, field
 from pathlib import Path
 from types import MappingProxyType
 
 from .errors import (
-    ConfigFieldUnavailableError,
+    PlatformConfigError,
     PlatformConfigNotFoundError,
-    PlatformConfigParseError,
 )
 from .units import SizeUnit, convert_size
 
@@ -93,7 +95,7 @@ class AICoreSpecSection(PlatformConfigSection):
 def _version_section(name: str, raw: Mapping[str, str]) -> VersionSection:
     soc_version = _optional_text(raw, "SoC_version")
     if soc_version is None:
-        raise PlatformConfigParseError("[version] is missing required field SoC_version")
+        raise PlatformConfigError("[version] is missing required field SoC_version")
     return VersionSection(
         name=name,
         _raw=raw,
@@ -159,7 +161,11 @@ class CANNPlatformConfig:
 
         config_path = Path(path)
         if not config_path.is_file():
-            raise PlatformConfigNotFoundError(f"Platform configuration file not found: {config_path}")
+            raise PlatformConfigNotFoundError(
+                errno.ENOENT,
+                "Platform configuration file not found",
+                os.fspath(config_path),
+            )
 
         parser = ConfigParser(
             interpolation=None,
@@ -167,14 +173,23 @@ class CANNPlatformConfig:
             empty_lines_in_values=False,
         )
         parser.optionxform = str
-        with config_path.open(encoding="utf-8") as stream:
-            parser.read_file(stream)
+        try:
+            with config_path.open(encoding="utf-8") as stream:
+                parser.read_file(stream)
+        except FileNotFoundError as error:
+            raise PlatformConfigNotFoundError(
+                errno.ENOENT,
+                "Platform configuration file not found",
+                os.fspath(config_path),
+            ) from error
+        except ConfigParserError as error:
+            raise PlatformConfigError(f"Could not parse platform configuration {config_path}: {error}") from error
 
         raw_sections = {name: dict(parser.items(name, raw=True)) for name in parser.sections()}
         missing = [name for name in ("version", "SoCInfo", "AICoreSpec") if name not in raw_sections]
         if missing:
             names = ", ".join(f"[{name}]" for name in missing)
-            raise PlatformConfigParseError(f"Missing required platform config section(s): {names}")
+            raise PlatformConfigError(f"Missing required platform config section(s): {names}")
 
         sections: dict[str, PlatformConfigSection] = {}
         try:
@@ -188,10 +203,10 @@ class CANNPlatformConfig:
                 else:
                     section = PlatformConfigSection(name=name, _raw=raw)
                 sections[name] = section
-        except PlatformConfigParseError:
+        except PlatformConfigError:
             raise
         except ValueError as error:
-            raise PlatformConfigParseError(f"Invalid value in platform configuration {config_path}: {error}") from error
+            raise PlatformConfigError(f"Invalid value in platform configuration {config_path}: {error}") from error
 
         version = sections["version"]
         soc_info = sections["SoCInfo"]
@@ -220,7 +235,7 @@ class CANNPlatformConfig:
     @staticmethod
     def _required_size(value: int | None, field_name: str) -> int:
         if value is None:
-            raise ConfigFieldUnavailableError(f"Platform configuration field is unavailable: {field_name}")
+            raise PlatformConfigError(f"Platform configuration field is unavailable: {field_name}")
         return value
 
     def ub_size(self, unit: SizeUnit | str = "bytes") -> int | float:
