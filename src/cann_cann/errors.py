@@ -1,21 +1,21 @@
-"""Exceptions raised by :mod:`cann_cann`."""
+"""cann-cann 的公开异常"""
 
 
 class CannCannError(Exception):
-    """Base class for all public cann-cann errors."""
+    """cann-cann 公开异常的基类"""
 
 
 class CANNNotFoundError(CannCannError):
-    """Raised when a usable CANN installation cannot be found."""
+    """找不到可用的 CANN 安装时抛出"""
 
 
 class NPUDetectionError(CannCannError):
-    """Raised when the current NPU name cannot be detected."""
+    """无法探测当前 NPU 名称时抛出"""
 
 
 class PlatformConfigError(CannCannError):
-    """Raised when a CANN platform configuration cannot be used."""
+    """无法使用 CANN 平台配置时抛出"""
 
 
 class PlatformConfigNotFoundError(PlatformConfigError, FileNotFoundError):
-    """Raised when a requested platform configuration file cannot be found."""
+    """找不到所需的平台配置文件时抛出"""

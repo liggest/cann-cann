@@ -1,126 +1,97 @@
+<div align="center">
+
 # cann-cann
 
-`cann-cann` is a small community-maintained Python library and command-line tool
-for reading the NPU platform configuration shipped with an installed CANN
-toolkit.
+一行代码快速检查环境上的 NPU 与 CANN 参数
 
-> The project is under initial v0.1 development. The documented API may still
-> change before the first release.
+> 让我看看你的 UB 有多大😎
+</div>
 
-## Requirements
+## 安装
 
-- Python 3.10 or newer
-- An installed CANN toolkit
-- A sourced CANN environment when detecting the local NPU name
-
-The library discovers CANN primarily through `ASCEND_HOME_PATH`. Reading a
-configuration for an explicitly named NPU does not require ACL device
-detection.
-
-An NPU name such as `Ascend910_9392` identifies a hardware platform
-configuration; it is not a device index, a neural-network model, or the CANN
-software version. CANN calls the same value a SoC version internally, while
-the public cann-cann API consistently calls it `npu_name`.
-
-## Installation
-
-During development, clone the repository and use uv:
+开发期间，可克隆仓库并使用 uv 安装依赖：
 
 ```console
 uv sync --dev
 ```
 
-After a release, the package can be installed from its wheel or package index.
+正式发布后，可通过 wheel 或 Python 软件包索引安装
 
-## Python API
+## 环境要求
 
-For a quick query, use the module-level convenience functions:
+- Python >= 3.10
+- 已安装 CANN 并加载环境变量
+
+## Python 接口
 
 ```python
 import cann_cann
 
-cann_cann.detect_npu_name()
-cann_cann.list_npu_names()
+cann_cann.ub_size()  # 253952
+cann_cann.ub_size(unit="kb")  # 248
 
-cann_cann.ub_size()
-cann_cann.ub_size(unit="kb")
-cann_cann.l0_a_size(npu_name="Ascend910_9392", unit="kb")
+cann_cann.npu_name()  # "Ascend950PR_XXXX"
+cann_cann.all_npu_names()  # ["Ascend910A",...]
+
+cann_cann.l0_a_size(npu_name="Ascend910_9392", unit="kb")  # 64
 ```
 
-To inspect several values from one configuration, obtain the cached platform
-configuration object:
+也可先获取单独的配置对象，方便连续读取同一份配置中的多个参数：
 
 ```python
 config = cann_cann.platform_config(npu_name="Ascend910_9392")
 
-config.ai_core_spec.ub_size  # raw platform value in bytes
-config.ai_core_spec.l0_a_size
-config.soc_info.ai_core_count
+config.ub_size(unit="kb")  # 192
+config.l1_size(unit="kb")  # 512
 
-config.ub_size(unit="kb")  # convenience conversion
-config.l2_size(unit="mb")
+# 读取配置文件中的原始值
+config.ai_core_spec.ub_size  # 196608
+config.soc_info.ai_core_count  # 24
 ```
 
-Typed properties cover the most useful fields. Unrecognized fields and
-sections remain available as their original INI strings:
+## 命令行
 
-```python
-config.ai_core_spec.raw("new_cann_field")
-config.raw_section("UnknownSection")
+提供 `cann-cann` 与作为简称的 `ccann` 命令，下面的示例使用任一命令均可
+
+```bash
+cann-cann UB  # 253952
+cann-cann UB --kb  # 248
+cann-cann L0A --unit kb  # 64
+cann-cann L1 --kb --npu-name Ascend910_9392  # 512
+cann-cann ai-cores  # 24
+
+cann-cann npu-name  # Ascend950PR_XXXX
+cann-cann all-npu-names  # Ascend910A...
 ```
 
-## Command line
+> 查询名称不区分大小写
+>
+> 当前支持 `UB`、`L0A`、`L0B`、`L0C`、`L1`、`L2` 和 `ai-cores`
 
-Detect the NPU name reported by ACL or list the names represented by the
-installed CANN platform configurations:
+<!-- ## 单位
 
-```console
-cann-cann npu-name
-cann-cann list-npu-names
-```
+平台配置中的存储空间大小以字节记录，Section 的类型化属性会原样返回这些值
+便利函数和方法默认使用 `unit="bytes"`
 
-Query common memory sizes and counts:
+为符合常见加速器工具的使用习惯，本项目中的 `kb` 和 `kib` 都表示 1024 字节，
+`mb` 和 `mib` 都表示 1024² 字节。CLI 可使用 `--kb`、`--kib`、`--mb` 和
+`--mib` 快速选择单位
 
-```console
-cann-cann UB
-cann-cann UB --kb
-cann-cann L0A --unit kib
-cann-cann L2 --mb --npu-name Ascend910_9392
-cann-cann AI_CORE_COUNT
-```
+## 异常处理
 
-Query names are case-insensitive. v0.1 supports `UB`, `L0A`, `L0B`, `L0C`,
-`L1`, `L2`, and `AI_CORE_COUNT`.
+找不到 CANN、无法探测 NPU 名称或无法读取平台配置时，Python API 会抛出
+`CannCannError` 的子类。一般情况下只需捕获这个基类；需要采取不同恢复措施时，
+可以进一步捕获 `NPUDetectionError` 或 `PlatformConfigNotFoundError`。不支持的单位
+等参数错误使用标准 `ValueError`
 
-The initial test matrix focuses on Ascend 910B, Ascend 910 93-series, Ascend
-950PR, and Ascend 950DT configurations. There is no hard-coded NPU allowlist:
-other configurations with compatible fields can be loaded as well.
-
-## Units
-
-Platform configuration values are stored in bytes and are returned unchanged
-by typed section properties. Convenience functions and methods default to
-`unit="bytes"`.
-
-For compatibility with common accelerator tooling, `kb` and `kib` both mean
-1024 bytes; `mb` and `mib` both mean 1024² bytes. The CLI shortcuts `--kb`,
-`--kib`, `--mb`, and `--mib` select the corresponding unit.
-
-## Errors
-
-The Python API raises `CannCannError` subclasses when CANN cannot be found, an
-NPU name cannot be detected, or a platform configuration cannot be used.
-Applications can normally catch this one base class; callers that need a
-fallback may catch `NPUDetectionError` or `PlatformConfigNotFoundError` more
-specifically. Invalid arguments, such as an unsupported unit, raise the
-standard `ValueError`. The CLI prints expected errors concisely and exits
-non-zero. If local detection is unavailable, pass an explicit NPU name:
+CLI 会简洁地显示可预期的错误，并以非零状态码退出。如果无法自动探测 NPU，
+可显式指定名称：
 
 ```console
 cann-cann UB --npu-name Ascend910_9392
-```
+``` -->
 
-## Development
+## 测试与构建
 
 ```console
 uv run ruff format --check .

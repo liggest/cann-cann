@@ -1,10 +1,12 @@
-"""Command-line interface for :mod:`cann_cann`."""
+"""cann-cann 命令行入口"""
 
 from __future__ import annotations
 
 import argparse
 import sys
 from collections.abc import Sequence
+from pathlib import Path
+from typing import TypeAlias
 
 from .errors import CannCannError
 
@@ -19,38 +21,48 @@ _SIZE_QUERIES = {
     "l2": "l2_size",
     "ub": "ub_size",
 }
-_COUNT_QUERIES = {"ai_core_count": "ai_core_count"}
+_COUNT_QUERIES = {
+    "ai_core_count": "ai_core_count",
+    "ai_cores": "ai_core_count",
+    "cores": "ai_core_count",
+}
+_CLIResult: TypeAlias = str | list[str] | int | float
 
 
-def _parser() -> argparse.ArgumentParser:
+def _parser(prog: str = "cann-cann") -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="cann-cann",
-        description="Inspect NPU platform configuration shipped with CANN.",
+        prog=prog,
+        description="看看环境上的 NPU 参数",
+        epilog="AI Core 数量可用 AI_CORE_COUNT、cores 或 ai-cores 查询",
+        add_help=False,
     )
+    parser._positionals.title = "位置参数"
+    parser._optionals.title = "选项"
+    parser.add_argument("-h", "--help", action="help", help="显示帮助信息并退出")
     parser.add_argument(
         "query",
-        help=("query to run: npu-name, list-npu-names, UB, L0A, L0B, L0C, L1, L2, or AI_CORE_COUNT"),
+        help="例如 UB、L1、cores、npu-name 或 all-npu-names",
     )
     parser.add_argument(
         "--npu-name",
         metavar="NAME",
-        help="read configuration for this NPU name instead of detecting it",
+        help="读取指定 NPU 名称的配置，不再自动探测",
     )
     units = parser.add_mutually_exclusive_group()
     units.add_argument(
         "--unit",
         choices=("bytes", "kb", "kib", "mb", "mib"),
-        help="output unit for size queries (default: bytes)",
+        help="存储空间大小的输出单位（默认：bytes）",
     )
-    units.add_argument("--kb", action="store_const", const="kb", dest="short_unit")
-    units.add_argument("--kib", action="store_const", const="kib", dest="short_unit")
-    units.add_argument("--mb", action="store_const", const="mb", dest="short_unit")
-    units.add_argument("--mib", action="store_const", const="mib", dest="short_unit")
+    units.add_argument("--kb", action="store_const", const="kb", dest="short_unit", help="以 kb 输出")
+    units.add_argument("--kib", action="store_const", const="kib", dest="short_unit", help="同 --kb")
+    units.add_argument("--mb", action="store_const", const="mb", dest="short_unit", help="以 mb 输出")
+    units.add_argument("--mib", action="store_const", const="mib", dest="short_unit", help="同 --mb")
     return parser
 
 
-def _run(args: argparse.Namespace) -> object:
-    # Import at execution time so importing the CLI itself never initializes ACL.
+def _run(args: argparse.Namespace) -> _CLIResult:
+    # 运行时导入，确保 CLI 始终通过公开 Python API 完成查询
     import cann_cann
 
     query = args.query.lower().replace("-", "_")
@@ -58,26 +70,26 @@ def _run(args: argparse.Namespace) -> object:
 
     if query == "npu_name":
         if args.npu_name is not None:
-            raise ValueError("--npu-name cannot be used with the npu-name query")
-        return cann_cann.detect_npu_name()
-    if query == "list_npu_names":
+            raise ValueError("查询 npu-name 时不能使用 --npu-name")
+        return cann_cann.npu_name()
+    if query == "all_npu_names":
         if args.npu_name is not None:
-            raise ValueError("--npu-name cannot be used with the list-npu-names query")
-        return cann_cann.list_npu_names()
+            raise ValueError("查询 all-npu-names 时不能使用 --npu-name")
+        return cann_cann.all_npu_names()
     if query in _SIZE_QUERIES:
         function = getattr(cann_cann, _SIZE_QUERIES[query])
         return function(npu_name=args.npu_name, unit=unit)
     if query in _COUNT_QUERIES:
         if args.unit is not None or args.short_unit is not None:
-            raise ValueError("size units can only be used with size queries")
+            raise ValueError("单位选项只能用于查询存储空间大小")
         function = getattr(cann_cann, _COUNT_QUERIES[query])
         return function(npu_name=args.npu_name)
 
-    raise ValueError(f"unknown query: {args.query}")
+    raise ValueError(f"未知的查询项：{args.query}")
 
 
-def _print_result(result: object) -> None:
-    if isinstance(result, (list, tuple)):
+def _print_result(result: _CLIResult) -> None:
+    if isinstance(result, list):
         for item in result:
             print(item)
         return
@@ -85,13 +97,14 @@ def _print_result(result: object) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Run the ``cann-cann`` command and return its process exit code."""
-    parser = _parser()
+    """运行命令行程序并返回退出码"""
+    prog = Path(sys.argv[0]).name if argv is None else "cann-cann"
+    parser = _parser(prog)
     args = parser.parse_args(argv)
     try:
         _print_result(_run(args))
     except (CannCannError, ValueError) as error:
-        print(f"error: {error}", file=sys.stderr)
+        print(f"错误：{error}", file=sys.stderr)
         return 2
     return 0
 

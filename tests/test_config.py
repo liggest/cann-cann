@@ -93,7 +93,7 @@ def test_missing_file_has_domain_error(tmp_path: Path) -> None:
     assert isinstance(caught.value, FileNotFoundError)
     assert isinstance(caught.value, PlatformConfigError)
     assert caught.value.errno == errno.ENOENT
-    assert caught.value.strerror == "Platform configuration file not found"
+    assert caught.value.strerror == "找不到平台配置文件"
     assert caught.value.filename == os.fspath(path)
 
 

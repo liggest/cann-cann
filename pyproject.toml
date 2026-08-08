@@ -1,13 +1,14 @@
 [project]
 name = "cann-cann"
 version = "0.1.0"
-description = "Inspect NPU platform configuration shipped with CANN"
+description = "看看环境上的 NPU 参数"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = []
 
 [project.scripts]
 cann-cann = "cann_cann.cli:main"
+ccann = "cann_cann.cli:main"
 
 [dependency-groups]
 dev = [

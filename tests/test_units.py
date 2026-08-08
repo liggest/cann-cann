@@ -18,5 +18,5 @@ def test_convert_preserves_fractional_values() -> None:
 
 
 def test_convert_rejects_unknown_unit() -> None:
-    with pytest.raises(ValueError, match="Unsupported size unit"):
+    with pytest.raises(ValueError, match="不支持的单位"):
         convert_size(1, "gb")

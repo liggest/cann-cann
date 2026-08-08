@@ -1,4 +1,4 @@
-"""Size unit conversion helpers."""
+"""存储空间大小的单位转换"""
 
 from __future__ import annotations
 
@@ -16,11 +16,10 @@ _UNIT_DIVISORS: dict[str, int] = {
 
 
 def convert_size(value: int, unit: SizeUnit | str = "bytes") -> int | float:
-    """Convert a byte count to a supported binary size unit.
+    """将字节数转换为支持的二进制单位
 
-    For convenience, ``kb`` and ``mb`` use the same 1024-based semantics as
-    ``kib`` and ``mib``. An exact conversion remains an integer; otherwise a
-    floating-point value is returned.
+    为方便使用，``kb`` 与 ``kib``、``mb`` 与 ``mib`` 含义相同，均按 1024
+    进制换算。结果能整除时返回整数，否则返回浮点数
     """
 
     normalized_unit = unit.lower()
@@ -28,7 +27,7 @@ def convert_size(value: int, unit: SizeUnit | str = "bytes") -> int | float:
         divisor = _UNIT_DIVISORS[normalized_unit]
     except KeyError as error:
         choices = ", ".join(_UNIT_DIVISORS)
-        raise ValueError(f"Unsupported size unit {unit!r}; expected one of: {choices}") from error
+        raise ValueError(f"不支持的单位 {unit!r}；可选值：{choices}") from error
 
     quotient, remainder = divmod(value, divisor)
     if remainder == 0:

@@ -131,3 +131,11 @@ Ascend 910B、Ascend 910 93 系列、Ascend 950PR 和 Ascend 950DT 的平台配�
 - [x] 统一异常语义：调用参数和对象构造错误使用 `ValueError`，CANN 环境及平台配置错误使用领域异常。
 - [x] 让平台配置文件缺失同时兼容 `PlatformConfigError` 和 `FileNotFoundError`，并携带标准文件异常信息。
 - [x] 同步公共导出、README 和测试，并通过 Ruff、完整 pytest 及构建检查。
+
+## 12. 中文易用性与 CLI 微调
+
+- [x] 将 README、公共 API docstring、CLI 帮助和用户可见错误信息调整为简明、自然、通顺的中文；保留代码标识符和 NPU、CANN、ACL、AI Core、UB、L0A 等通用技术术语，避免生硬直译和不必要的技术黑话。
+- [x] 为 CLI 的 `AI_CORE_COUNT` 查询增加 `cores` 和 `ai-cores` 别名，明确这些别名均表示 `ai_core_cnt`，并补充帮助文本与测试。
+- [x] 使用 Python 3.10 兼容的内部联合类型规范 CLI 查询结果及输出函数，完成 Ruff、pytest 和构建验证。
+- [x] 将顶层 NPU 名称接口统一为 `npu_name()` 和 `all_npu_names()`，CLI 同步使用 `npu-name` 和 `all-npu-names`，避免仅靠单复数区分不同语义。
+- [x] 增加 `ccann` 作为 `cann-cann` 的简短命令别名，使帮助信息显示实际调用的命令名，并同步 README、测试和构建配置。

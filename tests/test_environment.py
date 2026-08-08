@@ -32,7 +32,7 @@ def test_normalize_architecture(machine: str, expected: str) -> None:
 
 
 def test_normalize_architecture_rejects_unknown_value() -> None:
-    with pytest.raises(CANNNotFoundError, match="architecture"):
+    with pytest.raises(CANNNotFoundError, match="主机架构"):
         environment.normalize_architecture("riscv64")
 
 

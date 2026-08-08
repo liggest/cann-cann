@@ -58,7 +58,7 @@ def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
         lambda home: FIXTURES,
     )
     monkeypatch.setattr(
-        cann_cann,
+        cann_cann._environment,
         "detect_npu_name",
         lambda: (_ for _ in ()).throw(AssertionError("ACL must not be called")),
     )
@@ -71,7 +71,7 @@ def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
 
 @pytest.mark.parametrize("npu_name", ["", "../Ascend910B2", "foo/bar"])
 def test_invalid_npu_name_is_a_value_error(npu_name: str) -> None:
-    with pytest.raises(ValueError, match="Invalid NPU name"):
+    with pytest.raises(ValueError, match="NPU 名称无效"):
         cann_cann.platform_config(npu_name)
 
 
