@@ -1,0 +1,95 @@
+from dataclasses import FrozenInstanceError
+from pathlib import Path
+
+import pytest
+
+from cann_cann.config import (
+    AICoreSpecSection,
+    CANNPlatformConfig,
+    PlatformConfigSection,
+    SoCInfoSection,
+    VersionSection,
+)
+from cann_cann.errors import PlatformConfigNotFoundError
+
+FIXTURES = Path(__file__).parent / "fixtures" / "platform_config"
+
+
+@pytest.mark.parametrize(
+    ("filename", "npu_name"),
+    [
+        ("Ascend910B2.ini", "Ascend910B2"),
+        ("Ascend910_9392.ini", "Ascend910_9392"),
+        ("Ascend950PR_9589.ini", "Ascend950PR_9589"),
+        ("Ascend950DT_9571.ini", "Ascend950DT_9571"),
+    ],
+)
+def test_parses_representative_platforms(filename: str, npu_name: str) -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / filename)
+
+    assert config.npu_name == npu_name
+    assert isinstance(config.version, VersionSection)
+    assert isinstance(config.soc_info, SoCInfoSection)
+    assert isinstance(config.ai_core_spec, AICoreSpecSection)
+    assert config.ai_core_spec.l0_a_size == 65536
+    assert config.ai_core_spec.l0_b_size == 65536
+    assert config.ai_core_spec.l1_size in (524288, 1048576)
+    assert config.ai_core_spec.ub_size in (196608, 253952)
+
+
+def test_typed_values_and_raw_values_share_section_object() -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910B2.ini")
+
+    assert config.version.npu_arch == 2201
+    assert config.soc_info.ai_core_count == 24
+    assert config.soc_info.memory_size == 68719476736
+    assert config.ai_core_spec.ub_size == 196608
+    assert config.ai_core_spec.raw("ub_size") == "196608"
+    assert config.section("AICoreSpec") is config.ai_core_spec
+    assert config.raw_section("AICoreSpec") is config.ai_core_spec.raw_items()
+
+
+def test_unknown_sections_and_numeric_keys_remain_available() -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910B2.ini")
+
+    cpu_cache = config.section("CPUCache")
+    assert isinstance(cpu_cache, PlatformConfigSection)
+    assert cpu_cache.raw("new_cann_field") == "kept verbatim"
+    assert config.raw_section("AICoreintrinsicDtypeMap") == {"0": "Intrinsic_vrelu|float16,float32"}
+
+
+def test_parser_preserves_case_and_percent_signs() -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910_9392.ini")
+
+    assert config.version.raw("SoC_version") == "Ascend910_9392"
+    assert config.version.raw("soc_version") is None
+    assert config.raw_section("UnknownSection") == {"future_field": "100% raw"}
+
+
+def test_objects_and_raw_mappings_are_read_only() -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910B2.ini")
+
+    with pytest.raises(FrozenInstanceError):
+        config.ai_core_spec.ub_size = 1  # type: ignore[misc]
+    with pytest.raises(TypeError):
+        config.ai_core_spec.raw_items()["ub_size"] = "1"  # type: ignore[index]
+
+
+def test_optional_fields_can_be_absent() -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910_9392.ini")
+
+    assert config.soc_info.memory_size is None
+    assert config.raw_section("not-present") is None
+
+
+def test_missing_file_has_domain_error(tmp_path: Path) -> None:
+    with pytest.raises(PlatformConfigNotFoundError):
+        CANNPlatformConfig.from_file(tmp_path / "missing.ini")
+
+
+def test_required_sections_are_validated(tmp_path: Path) -> None:
+    path = tmp_path / "incomplete.ini"
+    path.write_text("[version]\nSoC_version=Example\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match=r"\[SoCInfo\].*\[AICoreSpec\]"):
+        CANNPlatformConfig.from_file(path)
