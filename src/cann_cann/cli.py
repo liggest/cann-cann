@@ -19,6 +19,8 @@ _SIZE_QUERIES = {
     "l0c": "l0_c_size",
     "l1": "l1_size",
     "l2": "l2_size",
+    "hbm": "memory_size",
+    "memory": "memory_size",
     "ub": "ub_size",
 }
 _COUNT_QUERIES = {
@@ -41,7 +43,7 @@ def _parser(prog: str = "cann-cann") -> argparse.ArgumentParser:
     parser.add_argument("-h", "--help", action="help", help="显示帮助信息并退出")
     parser.add_argument(
         "query",
-        help="例如 UB、L1、cores、npu-name 或 all-npu-names",
+        help="例如 UB、L1、memory、cores、npu-name 或 all-npu-names",
     )
     parser.add_argument(
         "--npu-name",
@@ -51,13 +53,15 @@ def _parser(prog: str = "cann-cann") -> argparse.ArgumentParser:
     units = parser.add_mutually_exclusive_group()
     units.add_argument(
         "--unit",
-        choices=("bytes", "kb", "kib", "mb", "mib"),
+        choices=("bytes", "kb", "kib", "mb", "mib", "gb", "gib"),
         help="存储空间大小的输出单位（默认：bytes）",
     )
     units.add_argument("--kb", action="store_const", const="kb", dest="short_unit", help="以 kb 输出")
     units.add_argument("--kib", action="store_const", const="kib", dest="short_unit", help="同 --kb")
     units.add_argument("--mb", action="store_const", const="mb", dest="short_unit", help="以 mb 输出")
     units.add_argument("--mib", action="store_const", const="mib", dest="short_unit", help="同 --mb")
+    units.add_argument("--gb", action="store_const", const="gb", dest="short_unit", help="以 gb 输出")
+    units.add_argument("--gib", action="store_const", const="gib", dest="short_unit", help="同 --gb")
     return parser
 
 

@@ -19,6 +19,7 @@ def test_config_convenience_methods() -> None:
     assert config.l0_c_size("kb") == 128
     assert config.l1_size("kb") == 512
     assert config.l2_size("mb") == 192
+    assert config.memory_size("gb") == 64
     assert config.ai_core_count() == 24
 
 
@@ -84,6 +85,7 @@ def test_invalid_npu_name_is_a_value_error(npu_name: str) -> None:
         ("l0_c_size", "l0_c_size"),
         ("l1_size", "l1_size"),
         ("l2_size", "l2_size"),
+        ("memory_size", "memory_size"),
     ],
 )
 def test_module_size_functions_forward_to_config(function_name: str, method_name: str, monkeypatch) -> None:
@@ -106,3 +108,6 @@ def test_missing_convenience_field_has_domain_error(tmp_path: Path) -> None:
 
     with pytest.raises(PlatformConfigError, match="AICoreSpec.ub_size"):
         config.ub_size()
+
+    with pytest.raises(PlatformConfigError, match="SoCInfo.memory_size"):
+        config.memory_size()

@@ -273,6 +273,12 @@ class CANNPlatformConfig:
         value = self._required_size(self.soc_info.l2_size, "SoCInfo.l2_size")
         return convert_size(value, unit)
 
+    def memory_size(self, unit: SizeUnit | str = "bytes") -> int | float:
+        """按指定单位返回 NPU 显存大小"""
+
+        value = self._required_size(self.soc_info.memory_size, "SoCInfo.memory_size")
+        return convert_size(value, unit)
+
     def ai_core_count(self) -> int:
         """返回 AI Core 数量"""
 

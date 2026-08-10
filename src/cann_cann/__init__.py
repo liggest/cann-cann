@@ -93,6 +93,12 @@ def l2_size(*, npu_name: str | None = None, unit: SizeUnit | str = "bytes") -> i
     return platform_config(npu_name).l2_size(unit)
 
 
+def memory_size(*, npu_name: str | None = None, unit: SizeUnit | str = "bytes") -> int | float:
+    """返回指定 NPU 的显存大小"""
+
+    return platform_config(npu_name).memory_size(unit)
+
+
 def ai_core_count(*, npu_name: str | None = None) -> int:
     """返回指定 NPU 的 AI Core 数量"""
 
@@ -118,6 +124,7 @@ __all__ = [
     "l0_c_size",
     "l1_size",
     "l2_size",
+    "memory_size",
     "npu_name",
     "platform_config",
     "ub_size",

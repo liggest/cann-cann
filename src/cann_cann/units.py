@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal, TypeAlias
 
-SizeUnit: TypeAlias = Literal["bytes", "kb", "kib", "mb", "mib"]
+SizeUnit: TypeAlias = Literal["bytes", "kb", "kib", "mb", "mib", "gb", "gib"]
 
 _UNIT_DIVISORS: dict[str, int] = {
     "bytes": 1,
@@ -12,14 +12,16 @@ _UNIT_DIVISORS: dict[str, int] = {
     "kib": 1024,
     "mb": 1024**2,
     "mib": 1024**2,
+    "gb": 1024**3,
+    "gib": 1024**3,
 }
 
 
 def convert_size(value: int, unit: SizeUnit | str = "bytes") -> int | float:
     """将字节数转换为支持的二进制单位
 
-    为方便使用，``kb`` 与 ``kib``、``mb`` 与 ``mib`` 含义相同，均按 1024
-    进制换算。结果能整除时返回整数，否则返回浮点数
+    为方便使用，``kb`` 与 ``kib``、``mb`` 与 ``mib``、``gb`` 与 ``gib``
+    含义相同，均按 1024 进制换算。结果能整除时返回整数，否则返回浮点数
     """
 
     normalized_unit = unit.lower()

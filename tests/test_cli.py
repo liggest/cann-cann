@@ -33,6 +33,22 @@ def test_long_unit_option(monkeypatch, capsys) -> None:
     assert capsys.readouterr().out == "0.0625\n"
 
 
+def test_memory_query_and_hbm_alias(monkeypatch, capsys) -> None:
+    calls = []
+
+    def fake_memory_size(*, npu_name, unit):
+        calls.append((npu_name, unit))
+        return 64
+
+    monkeypatch.setattr(cann_cann, "memory_size", fake_memory_size, raising=False)
+
+    assert main(["memory", "--npu-name", "Ascend910B2", "--gb"]) == 0
+    assert capsys.readouterr().out == "64\n"
+    assert main(["hBm", "--gib"]) == 0
+    assert capsys.readouterr().out == "64\n"
+    assert calls == [("Ascend910B2", "gb"), (None, "gib")]
+
+
 def test_npu_name(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
         cann_cann,
@@ -94,6 +110,8 @@ def test_help_explains_ai_core_count_aliases(capsys) -> None:
     assert "ai-cores" in output
     assert "--kib" in output and "同 --kb" in output
     assert "--mib" in output and "同 --mb" in output
+    assert "--gib" in output and "同 --gb" in output
+    assert "memory" in output
 
 
 def test_short_command_help_uses_invoked_name(monkeypatch, capsys) -> None:

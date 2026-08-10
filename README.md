@@ -4,7 +4,7 @@
 
 一行代码快速检查环境上的 NPU 与 CANN 参数
 
-> 让我看看你的 UB 有多大😎
+> 看看你的 UB 有多大😎
 </div>
 
 ## 安装
@@ -29,24 +29,27 @@ import cann_cann
 
 cann_cann.ub_size()  # 253952
 cann_cann.ub_size(unit="kb")  # 248
+cann_cann.memory_size(unit="gb")  # 128
 
 cann_cann.npu_name()  # "Ascend950PR_XXXX"
 cann_cann.all_npu_names()  # ["Ascend910A",...]
 
-cann_cann.l0_a_size(npu_name="Ascend910_9392", unit="kb")  # 64
+cann_cann.memory_size(npu_name="Ascend910_9392", unit="gb")  # 64
 ```
 
 也可先获取单独的配置对象，方便连续读取同一份配置中的多个参数：
 
 ```python
-config = cann_cann.platform_config(npu_name="Ascend910_9392")
+config = cann_cann.platform_config(npu_name="Ascend910B2")
 
 config.ub_size(unit="kb")  # 192
 config.l1_size(unit="kb")  # 512
+config.memory_size(unit="gb")  # 64
 
 # 读取配置文件中的原始值
 config.ai_core_spec.ub_size  # 196608
 config.soc_info.ai_core_count  # 24
+config.soc_info.memory_size  # 68719476736
 ```
 
 ## 命令行
@@ -56,17 +59,18 @@ config.soc_info.ai_core_count  # 24
 ```bash
 cann-cann UB  # 253952
 cann-cann UB --kb  # 248
-cann-cann L0A --unit kb  # 64
-cann-cann L1 --kb --npu-name Ascend910_9392  # 512
-cann-cann ai-cores  # 24
+ccann L0A --unit kb  # 64
+ccann L1 --kb --npu-name Ascend910_9392  # 512
+ccann ai-cores  # 24
+ccann memory --gb  # 128
 
-cann-cann npu-name  # Ascend950PR_XXXX
-cann-cann all-npu-names  # Ascend910A...
+ccann npu-name  # Ascend950PR_XXXX
+ccann all-npu-names  # Ascend910A...
 ```
 
 > 查询名称不区分大小写
 >
-> 当前支持 `UB`、`L0A`、`L0B`、`L0C`、`L1`、`L2` 和 `ai-cores`
+> 当前支持 `UB`、`L0A`、`L0B`、`L0C`、`L1`、`L2`、`memory` 和 `ai-cores`
 
 <!-- ## 单位
 

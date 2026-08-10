@@ -77,8 +77,13 @@ def test_objects_and_raw_mappings_are_read_only() -> None:
         config.ai_core_spec.raw_items()["ub_size"] = "1"  # type: ignore[index]
 
 
-def test_optional_fields_can_be_absent() -> None:
-    config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910_9392.ini")
+def test_optional_fields_can_be_absent(tmp_path: Path) -> None:
+    path = tmp_path / "optional-fields.ini"
+    path.write_text(
+        "[version]\nSoC_version=Example\n[SoCInfo]\n[AICoreSpec]\n",
+        encoding="utf-8",
+    )
+    config = CANNPlatformConfig.from_file(path)
 
     assert config.soc_info.memory_size is None
     assert config.raw_section("not-present") is None
