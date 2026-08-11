@@ -97,6 +97,20 @@ cann-cann UB --npu-name Ascend910_9392
 
 ## 测试与构建
 
+首次开发时安装提交前检查：
+
+```console
+uv run pre-commit install
+```
+
+pre-commit 会在每次提交前运行 Ruff。也可手动检查所有文件：
+
+```console
+uv run pre-commit run --all-files
+```
+
+完整检查与构建：
+
 ```console
 uv run ruff format --check .
 uv run ruff check .

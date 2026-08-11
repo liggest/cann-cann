@@ -12,6 +12,7 @@ ccann = "cann_cann.cli:main"
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.6.2",
     "pytest>=8.0",
     "ruff>=0.8",
 ]
