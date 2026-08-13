@@ -9,18 +9,11 @@
 
 ## 安装
 
-开发期间，可克隆仓库并使用 uv 安装依赖：
-
-```console
-uv sync --dev
+```bash
+pip install cann-cann
 ```
 
-正式发布后，可通过 wheel 或 Python 软件包索引安装
-
-## 环境要求
-
-- Python >= 3.10
-- 已安装 CANN 并加载环境变量
+> 支持 Python >= 3.10；需要安装 CANN 并加载环境变量
 
 ## Python 接口
 
@@ -54,7 +47,7 @@ config.soc_info.memory_size  # 68719476736
 
 ## 命令行
 
-提供 `cann-cann` 与作为简称的 `ccann` 命令，下面的示例使用任一命令均可
+提供 `cann-cann` 与作为简称的 `ccann` 命令，使用任一命令均可
 
 ```bash
 cann-cann UB  # 253952
@@ -64,7 +57,7 @@ ccann L1 --kb --npu-name Ascend910_9392  # 512
 ccann ai-cores  # 24
 ccann memory --gb  # 128
 
-ccann npu-name  # Ascend950PR_XXXX
+cann-cann npu-name  # Ascend950PR_XXXX
 ccann all-npu-names  # Ascend910A...
 ```
 
@@ -91,27 +84,28 @@ ccann all-npu-names  # Ascend910A...
 CLI 会简洁地显示可预期的错误，并以非零状态码退出。如果无法自动探测 NPU，
 可显式指定名称：
 
-```console
+```bash
 cann-cann UB --npu-name Ascend910_9392
 ``` -->
 
-## 测试与构建
+## 参与开发
 
-首次开发时安装提交前检查：
+参与开发时，先安装开发依赖并启用提交前检查：
 
-```console
+```bash
+uv sync --dev
 uv run pre-commit install
 ```
 
-pre-commit 会在每次提交前运行 Ruff。也可手动检查所有文件：
+启用后，每次提交前都会使用 Ruff 自动检查并格式化 Python 代码。也可手动检查所有文件：
 
-```console
+```bash
 uv run pre-commit run --all-files
 ```
 
-完整检查与构建：
+完整检查、测试与构建：
 
-```console
+```bash
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest

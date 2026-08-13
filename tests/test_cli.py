@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from importlib.metadata import version
 
 import cann_cann
 from cann_cann.cli import main
@@ -112,6 +113,16 @@ def test_help_explains_ai_core_count_aliases(capsys) -> None:
     assert "--mib" in output and "同 --mb" in output
     assert "--gib" in output and "同 --gb" in output
     assert "memory" in output
+
+
+def test_version_options(capsys) -> None:
+    for option in ("-v", "--version"):
+        try:
+            main([option])
+        except SystemExit as error:
+            assert error.code == 0
+
+        assert capsys.readouterr().out == f"cann-cann {version('cann-cann')}\n"
 
 
 def test_short_command_help_uses_invoked_name(monkeypatch, capsys) -> None:

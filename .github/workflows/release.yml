@@ -1,0 +1,39 @@
+name: 发布到 PyPI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    name: 构建并发布
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cann-cann
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: 安装 uv 和 Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          python-version: "3.12"
+      - name: 检查版本号
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          PROJECT_VERSION="$(uv version --short)"
+          if [ "$RELEASE_TAG" != "v$PROJECT_VERSION" ]; then
+            echo "Release 标签 $RELEASE_TAG 与项目版本 $PROJECT_VERSION 不一致"
+            exit 1
+          fi
+      - name: 构建发布包
+        run: uv build --no-sources
+      - name: 验证 wheel
+        run: uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
+      - name: 验证源码包
+        run: uv run --isolated --no-project --with dist/*.tar.gz tests/smoke_test.py
+      - name: 发布到 PyPI
+        run: uv publish --trusted-publishing always

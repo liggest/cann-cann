@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from functools import cache, lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from . import environment as _environment
 from .config import (
@@ -21,6 +22,22 @@ from .errors import (
     PlatformConfigNotFoundError,
 )
 from .units import SizeUnit
+
+if TYPE_CHECKING:
+    __version__: str
+
+
+def __getattr__(name: str) -> str:
+    """按需读取安装包版本，首次读取后缓存结果"""
+
+    if name != "__version__":
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    from importlib.metadata import version
+
+    package_version = version("cann-cann")
+    globals()[name] = package_version
+    return package_version
 
 
 @lru_cache(maxsize=1)
@@ -106,6 +123,7 @@ def ai_core_count(*, npu_name: str | None = None) -> int:
 
 
 __all__ = [
+    "__version__",
     "AICoreSpecSection",
     "CANNNotFoundError",
     "CANNPlatformConfig",

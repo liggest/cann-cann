@@ -1,3 +1,5 @@
+import subprocess
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -7,6 +9,18 @@ import cann_cann
 from cann_cann.errors import PlatformConfigError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "platform_config"
+
+
+def test_version_is_loaded_lazily_and_cached() -> None:
+    code = """
+from importlib.metadata import version as distribution_version
+import cann_cann
+assert "__version__" not in vars(cann_cann)
+version = cann_cann.__version__
+assert version == distribution_version("cann-cann")
+assert vars(cann_cann)["__version__"] is version
+"""
+    subprocess.run([sys.executable, "-c", code], check=True)
 
 
 def test_config_convenience_methods() -> None:

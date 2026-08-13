@@ -31,6 +31,23 @@ _COUNT_QUERIES = {
 _CLIResult: TypeAlias = str | list[str] | int | float
 
 
+class _VersionAction(argparse.Action):
+    def __init__(self, option_strings: Sequence[str], dest: str, **kwargs) -> None:
+        super().__init__(option_strings, dest, nargs=0, **kwargs)
+
+    def __call__(
+        self,
+        parser: argparse.ArgumentParser,
+        namespace: argparse.Namespace,
+        values: object,
+        option_string: str | None = None,
+    ) -> None:
+        import cann_cann
+
+        print(f"{parser.prog} {cann_cann.__version__}")
+        parser.exit()
+
+
 def _parser(prog: str = "cann-cann") -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog=prog,
@@ -41,6 +58,7 @@ def _parser(prog: str = "cann-cann") -> argparse.ArgumentParser:
     parser._positionals.title = "位置参数"
     parser._optionals.title = "选项"
     parser.add_argument("-h", "--help", action="help", help="显示帮助信息并退出")
+    parser.add_argument("-v", "--version", action=_VersionAction, help="显示版本信息并退出")
     parser.add_argument(
         "query",
         help="例如 UB、L1、memory、cores、npu-name 或 all-npu-names",

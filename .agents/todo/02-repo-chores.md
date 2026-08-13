@@ -11,3 +11,9 @@
 ## 3. 验证与收尾
 
 - [x] 在本地运行 pre-commit、完整 pytest 和构建检查，确认配置文件有效后更新任务状态
+
+## 4. PyPI 发布
+
+- [x] 完善 PyPI 项目元数据、正式安装说明与惰性版本接口，并为 CLI 增加 `-v` / `--version`
+- [x] 新增由 GitHub Release 触发的 Trusted Publishing 工作流，校验 Release tag 与项目版本一致后构建、冒烟测试并发布 wheel 和 sdist
+- [x] 检查发布包内容，确认开发目录不会进入 wheel，并通过 pre-commit、完整 pytest、构建及安装验证

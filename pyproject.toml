@@ -4,7 +4,17 @@ version = "0.1.0"
 description = "看看环境上的 NPU 参数"
 readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = []
+
+[[project.authors]]
+name = "liggest"
+
+[project.urls]
+Homepage = "https://github.com/liggest/cann-cann"
+Repository = "https://github.com/liggest/cann-cann"
+Issues = "https://github.com/liggest/cann-cann/issues"
 
 [project.scripts]
 cann-cann = "cann_cann.cli:main"
