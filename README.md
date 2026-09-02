@@ -2,6 +2,8 @@
 
 # cann-cann
 
+[![PyPI version](https://img.shields.io/pypi/v/cann-cann.svg)](https://pypi.org/project/cann-cann/)
+
 一行代码快速检查环境上的 NPU 与 CANN 参数
 
 > 看看你的 UB 有多大😎
