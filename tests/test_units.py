@@ -1,6 +1,17 @@
+from typing import get_args
+
 import pytest
 
-from cann_cann.units import convert_size
+from cann_cann.units import SizeUnit, convert_size
+
+
+@pytest.mark.parametrize("unit", ["bytes", "b", "B"])
+def test_convert_bytes(unit: str) -> None:
+    assert convert_size(196608, unit) == 196608
+
+
+def test_size_unit_includes_byte_aliases() -> None:
+    assert {"bytes", "b", "B"} <= set(get_args(SizeUnit))
 
 
 @pytest.mark.parametrize("unit", ["kb", "kib", "KB", "KiB"])

@@ -9,6 +9,18 @@ class CANNNotFoundError(CannCannError):
     """找不到可用的 CANN 安装时抛出"""
 
 
+class CANNInstallInfoError(CannCannError):
+    """无法读取或解析 CANN 安装信息时抛出"""
+
+
+class CANNInstallInfoNotFoundError(CANNInstallInfoError, FileNotFoundError):
+    """找不到 CANN 安装信息文件时抛出"""
+
+
+class EnvironmentInfoError(CannCannError):
+    """无法读取主机环境信息时抛出"""
+
+
 class NPUDetectionError(CannCannError):
     """无法探测当前 NPU 名称时抛出"""
 

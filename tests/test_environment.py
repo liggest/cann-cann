@@ -39,15 +39,14 @@ def test_normalize_architecture_rejects_unknown_value() -> None:
 def test_find_cann_home_uses_environment_priority(tmp_path: Path) -> None:
     ascend_home = tmp_path / "home"
     toolkit_home = tmp_path / "toolkit"
-    make_installation(ascend_home)
-    make_installation(toolkit_home)
+    ascend_home.mkdir()
+    toolkit_home.mkdir()
 
     found = environment.find_cann_home(
         environ={
             "ASCEND_HOME_PATH": str(ascend_home),
             "ASCEND_TOOLKIT_HOME": str(toolkit_home),
         },
-        machine="aarch64",
         default_homes=(),
     )
 
@@ -56,14 +55,13 @@ def test_find_cann_home_uses_environment_priority(tmp_path: Path) -> None:
 
 def test_find_cann_home_skips_invalid_higher_priority_path(tmp_path: Path) -> None:
     toolkit_home = tmp_path / "toolkit"
-    make_installation(toolkit_home)
+    toolkit_home.mkdir()
 
     found = environment.find_cann_home(
         environ={
             "ASCEND_HOME_PATH": str(tmp_path / "missing"),
             "ASCEND_TOOLKIT_HOME": str(toolkit_home),
         },
-        machine="aarch64",
         default_homes=(),
     )
 
@@ -72,14 +70,14 @@ def test_find_cann_home_skips_invalid_higher_priority_path(tmp_path: Path) -> No
 
 def test_find_cann_home_falls_back_to_standard_path(tmp_path: Path) -> None:
     default_home = tmp_path / "cann"
-    make_installation(default_home, "x86_64")
+    default_home.mkdir()
 
-    assert environment.find_cann_home(environ={}, machine="x86_64", default_homes=(default_home,)) == default_home.resolve()
+    assert environment.find_cann_home(environ={}, default_homes=(default_home,)) == default_home.resolve()
 
 
 def test_find_cann_home_reports_missing_installation(tmp_path: Path) -> None:
     with pytest.raises(CANNNotFoundError):
-        environment.find_cann_home(environ={}, machine="aarch64", default_homes=(tmp_path / "missing",))
+        environment.find_cann_home(environ={}, default_homes=(tmp_path / "missing",))
 
 
 def test_detect_npu_name_is_lazy_and_cached(monkeypatch: pytest.MonkeyPatch) -> None:

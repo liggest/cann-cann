@@ -51,6 +51,26 @@ def test_typed_values_and_raw_values_share_section_object() -> None:
     assert config.raw_section("AICoreSpec") is config.ai_core_spec.raw_items()
 
 
+@pytest.mark.parametrize(
+    ("filename", "cube_cores", "vector_cores", "npu_arch"),
+    [
+        ("Ascend910B2.ini", 24, 48, 2201),
+        ("Ascend950PR_9589.ini", 32, 64, 3101),
+    ],
+)
+def test_core_count_and_npu_arch_convenience_methods(
+    filename: str,
+    cube_cores: int,
+    vector_cores: int,
+    npu_arch: int,
+) -> None:
+    config = CANNPlatformConfig.from_file(FIXTURES / filename)
+
+    assert config.cube_core_count() == cube_cores
+    assert config.vector_core_count() == vector_cores
+    assert config.npu_arch() == npu_arch
+
+
 def test_unknown_sections_and_numeric_keys_remain_available() -> None:
     config = CANNPlatformConfig.from_file(FIXTURES / "Ascend910B2.ini")
 
@@ -87,6 +107,30 @@ def test_optional_fields_can_be_absent(tmp_path: Path) -> None:
 
     assert config.soc_info.memory_size is None
     assert config.raw_section("not-present") is None
+
+
+@pytest.mark.parametrize(
+    ("method_name", "field_name"),
+    [
+        ("cube_core_count", "SoCInfo.cube_core_cnt"),
+        ("vector_core_count", "SoCInfo.vector_core_cnt"),
+        ("npu_arch", "version.NpuArch"),
+    ],
+)
+def test_missing_core_count_or_npu_arch_has_domain_error(
+    tmp_path: Path,
+    method_name: str,
+    field_name: str,
+) -> None:
+    path = tmp_path / "optional-fields.ini"
+    path.write_text(
+        "[version]\nSoC_version=Example\n[SoCInfo]\n[AICoreSpec]\n",
+        encoding="utf-8",
+    )
+    config = CANNPlatformConfig.from_file(path)
+
+    with pytest.raises(PlatformConfigError, match=field_name):
+        getattr(config, method_name)()
 
 
 def test_missing_file_has_domain_error(tmp_path: Path) -> None:

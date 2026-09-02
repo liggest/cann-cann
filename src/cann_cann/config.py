@@ -283,3 +283,18 @@ class CANNPlatformConfig:
         """返回 AI Core 数量"""
 
         return self._required_size(self.soc_info.ai_core_count, "SoCInfo.ai_core_cnt")
+
+    def cube_core_count(self) -> int:
+        """返回 Cube Core 数量"""
+
+        return self._required_size(self.soc_info.cube_core_count, "SoCInfo.cube_core_cnt")
+
+    def vector_core_count(self) -> int:
+        """返回 Vector Core 数量"""
+
+        return self._required_size(self.soc_info.vector_core_count, "SoCInfo.vector_core_cnt")
+
+    def npu_arch(self) -> int:
+        """返回平台配置记录的 NPU 架构版本"""
+
+        return self._required_size(self.version.npu_arch, "version.NpuArch")

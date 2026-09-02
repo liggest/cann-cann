@@ -11,6 +11,21 @@ from cann_cann.errors import PlatformConfigError
 FIXTURES = Path(__file__).parent / "fixtures" / "platform_config"
 
 
+@pytest.fixture(autouse=True)
+def clear_default_caches() -> None:
+    cann_cann._default_platform_config_directory.cache_clear()
+    cann_cann._platform_config_by_name.cache_clear()
+    cann_cann._environment.ascend_home.cache_clear()
+    cann_cann._environment.host_arch.cache_clear()
+    cann_cann._environment.cann_install_info.cache_clear()
+    yield
+    cann_cann._default_platform_config_directory.cache_clear()
+    cann_cann._platform_config_by_name.cache_clear()
+    cann_cann._environment.ascend_home.cache_clear()
+    cann_cann._environment.host_arch.cache_clear()
+    cann_cann._environment.cann_install_info.cache_clear()
+
+
 def test_version_is_loaded_lazily_and_cached() -> None:
     code = """
 from importlib.metadata import version as distribution_version
@@ -35,11 +50,12 @@ def test_config_convenience_methods() -> None:
     assert config.l2_size("mb") == 192
     assert config.memory_size("gb") == 64
     assert config.ai_core_count() == 24
+    assert config.cube_core_count() == 24
+    assert config.vector_core_count() == 48
+    assert config.npu_arch() == 2201
 
 
 def test_platform_config_is_cached_by_npu_name(monkeypatch) -> None:
-    cann_cann._default_platform_config_directory.cache_clear()
-    cann_cann._platform_config_by_name.cache_clear()
     monkeypatch.setattr(
         cann_cann._environment,
         "find_cann_home",
@@ -48,20 +64,15 @@ def test_platform_config_is_cached_by_npu_name(monkeypatch) -> None:
     monkeypatch.setattr(
         cann_cann._environment,
         "platform_config_directory",
-        lambda home: FIXTURES,
+        lambda home, **kwargs: FIXTURES,
     )
 
-    first = cann_cann.platform_config("Ascend910B2")
-    second = cann_cann.platform_config("Ascend910B2")
+    first = cann_cann.platform_config("910b2")
+    second = cann_cann.platform_config("ASCEND910B2")
     assert first is second
-
-    cann_cann._default_platform_config_directory.cache_clear()
-    cann_cann._platform_config_by_name.cache_clear()
 
 
 def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
-    cann_cann._default_platform_config_directory.cache_clear()
-    cann_cann._platform_config_by_name.cache_clear()
     monkeypatch.setattr(
         cann_cann._environment,
         "find_cann_home",
@@ -70,7 +81,7 @@ def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
     monkeypatch.setattr(
         cann_cann._environment,
         "platform_config_directory",
-        lambda home: FIXTURES,
+        lambda home, **kwargs: FIXTURES,
     )
     monkeypatch.setattr(
         cann_cann._environment,
@@ -79,9 +90,6 @@ def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
     )
 
     assert cann_cann.ub_size(npu_name="Ascend910B2", unit="kb") == 192
-
-    cann_cann._default_platform_config_directory.cache_clear()
-    cann_cann._platform_config_by_name.cache_clear()
 
 
 @pytest.mark.parametrize("npu_name", ["", "../Ascend910B2", "foo/bar"])
@@ -110,6 +118,46 @@ def test_module_size_functions_forward_to_config(function_name: str, method_name
     function = getattr(cann_cann, function_name)
     assert function(npu_name="Example", unit="kb") == 42
     assert calls == ["kb"]
+
+
+@pytest.mark.parametrize(
+    "function_name",
+    ["ai_core_count", "cube_core_count", "vector_core_count", "npu_arch"],
+)
+def test_module_platform_value_functions_forward_to_config(function_name: str, monkeypatch) -> None:
+    calls = []
+    config = SimpleNamespace(**{function_name: lambda: calls.append(function_name) or 42})
+    monkeypatch.setattr(cann_cann, "platform_config", lambda name: config)
+
+    function = getattr(cann_cann, function_name)
+    assert function(npu_name="A5") == 42
+    assert calls == [function_name]
+
+
+def test_public_name_helpers_have_distinct_environment_boundaries(tmp_path: Path, monkeypatch) -> None:
+    directory = tmp_path / "aarch64-linux" / "data" / "platform_config"
+    directory.mkdir(parents=True)
+    (directory / "Ascend950PR_9589.ini").touch()
+    monkeypatch.setattr(cann_cann._environment, "find_cann_home", lambda: tmp_path)
+    monkeypatch.setattr(cann_cann._environment.platform, "machine", lambda: "aarch64")
+
+    assert cann_cann.normalize_npu_name(" a5 ") == "Ascend950PR_9589"
+    assert cann_cann.resolve_npu_name("a5") == "Ascend950PR_9589"
+
+
+def test_public_environment_helpers_forward(monkeypatch, tmp_path: Path) -> None:
+    info = cann_cann.CANNInstallInfo(version="8.3.RC1", component="toolkit", path=tmp_path / "install.info")
+    monkeypatch.setattr(cann_cann._environment, "cann_install_info", lambda: info)
+    monkeypatch.setattr(cann_cann._environment, "cann_version", lambda: "8.3.RC1")
+    monkeypatch.setattr(cann_cann._environment, "host_arch", lambda: "aarch64")
+    monkeypatch.setattr(cann_cann._environment, "ascend_home", lambda: tmp_path)
+    monkeypatch.setattr(cann_cann._environment, "os_name", lambda: "Example OS 1")
+
+    assert cann_cann.cann_install_info() is info
+    assert cann_cann.cann_version() == "8.3.RC1"
+    assert cann_cann.host_arch() == "aarch64"
+    assert cann_cann.ascend_home() == tmp_path
+    assert cann_cann.os_name() == "Example OS 1"
 
 
 def test_missing_convenience_field_has_domain_error(tmp_path: Path) -> None:
