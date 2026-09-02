@@ -91,12 +91,69 @@ def test_short_unit_option_pairs_use_the_same_normalized_unit(monkeypatch, capsy
 
 @pytest.mark.parametrize("query", ["npu-name", "soc"])
 def test_npu_name_aliases(monkeypatch, capsys, query) -> None:
-    monkeypatch.setattr(cann_cann, "npu_name", lambda: "Ascend910_9392", raising=False)
+    calls = []
+
+    def fake_npu_name():
+        calls.append("npu_name")
+        return "Ascend910_9392"
+
+    def unexpected_resolve_npu_name(_):
+        raise AssertionError("未指定型号时不应调用 resolve_npu_name()")
+
+    monkeypatch.setattr(cann_cann, "npu_name", fake_npu_name, raising=False)
+    monkeypatch.setattr(cann_cann, "resolve_npu_name", unexpected_resolve_npu_name, raising=False)
 
     assert main([query]) == 0
     captured = capsys.readouterr()
     assert captured.out == "Ascend910_9392\n"
     assert captured.err == ""
+    assert calls == ["npu_name"]
+
+
+@pytest.mark.parametrize(
+    ("arguments", "name"),
+    [
+        (["-n", "A5", "npu-name"], "A5"),
+        (["soc", "--npu-name", "ascend950pr_9589"], "ascend950pr_9589"),
+        (["npu-name", "--soc", "Ascend950PR_9589"], "Ascend950PR_9589"),
+    ],
+)
+def test_explicit_npu_name_query_resolves_standard_name(monkeypatch, capsys, arguments, name) -> None:
+    calls = []
+
+    def unexpected_npu_name():
+        raise AssertionError("显式指定型号时不应调用 npu_name()")
+
+    def fake_resolve_npu_name(value):
+        calls.append(value)
+        return "Ascend950PR_9589"
+
+    monkeypatch.setattr(cann_cann, "npu_name", unexpected_npu_name, raising=False)
+    monkeypatch.setattr(cann_cann, "resolve_npu_name", fake_resolve_npu_name, raising=False)
+
+    assert main(arguments) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "Ascend950PR_9589\n"
+    assert captured.err == ""
+    assert calls == [name]
+
+
+def test_explicit_npu_name_query_returns_one_for_resolution_error(monkeypatch, capsys) -> None:
+    def fail(_):
+        raise CannCannError("找不到 NPU 型号")
+
+    monkeypatch.setattr(cann_cann, "resolve_npu_name", fail, raising=False)
+    monkeypatch.setattr(
+        cann_cann,
+        "npu_name",
+        lambda: pytest.fail("显式指定型号时不应调用 npu_name()"),
+        raising=False,
+    )
+
+    assert main(["npu-name", "-n", "unknown"]) == 1
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == "错误：找不到 NPU 型号\n"
 
 
 @pytest.mark.parametrize("query", ["ALL-NPU-NAMES", "all-socs"])
@@ -204,7 +261,6 @@ def test_cores_rejects_unit(monkeypatch, capsys) -> None:
     ("query", "api_name", "result"),
     [
         ("cann-version", "cann_version", "8.3.RC1"),
-        ("arch", "host_arch", "aarch64"),
         ("ascend-home", "ascend_home", Path("/opt/Ascend/cann")),
         ("cann-home", "ascend_home", Path("/opt/Ascend/cann")),
         ("ascend-root", "ascend_home", Path("/opt/Ascend/cann")),
@@ -224,28 +280,53 @@ def test_global_queries_and_aliases(monkeypatch, capsys, query, api_name, result
     assert captured.err == ""
 
 
-@pytest.mark.parametrize("option", ["-n", "--npu-name", "--soc"])
-def test_global_query_rejects_npu_option_with_actual_option_name(monkeypatch, capsys, option) -> None:
-    monkeypatch.setattr(cann_cann, "npu_name", lambda: "unused")
+@pytest.mark.parametrize("query", ["host-arch", "HOST_ARCH", "arch"])
+def test_host_arch_query_and_alias_only_call_host_arch(monkeypatch, capsys, query) -> None:
+    calls = []
 
-    assert main(["npu-name", option, "A5"]) == 2
+    def fake_host_arch():
+        calls.append("host_arch")
+        return "aarch64"
+
+    monkeypatch.setattr(cann_cann, "host_arch", fake_host_arch, raising=False)
+
+    assert main([query]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "aarch64\n"
+    assert captured.err == ""
+    assert calls == ["host_arch"]
+
+
+@pytest.mark.parametrize(
+    ("query", "api_name"),
+    [
+        ("all-npu-names", "all_npu_names"),
+        ("cann-version", "cann_version"),
+        ("host-arch", "host_arch"),
+    ],
+)
+@pytest.mark.parametrize("option", ["-n", "--npu-name", "--soc"])
+def test_other_global_queries_still_reject_npu_option(monkeypatch, capsys, query, api_name, option) -> None:
+    monkeypatch.setattr(cann_cann, api_name, lambda: "unused", raising=False)
+
+    assert main([query, option, "A5"]) == 2
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err == _input_error(f"查询 npu-name 时不能使用 {option}")
+    assert captured.err == _input_error(f"查询 {query} 时不能使用 {option}")
 
 
-def test_global_query_rejects_unit(monkeypatch, capsys) -> None:
-    monkeypatch.setattr(cann_cann, "host_arch", lambda: "unused", raising=False)
-
-    assert main(["arch", "--kb"]) == 2
+@pytest.mark.parametrize("query", ["host-arch", "npu-name"])
+def test_non_size_global_query_rejects_unit(capsys, query) -> None:
+    assert main([query, "--kb"]) == 2
     captured = capsys.readouterr()
     assert captured.out == ""
     assert captured.err == _input_error("单位选项只能用于查询存储空间大小")
 
 
-def test_repeated_npu_options_are_argparse_error(capsys) -> None:
+@pytest.mark.parametrize("query", ["UB", "npu-name"])
+def test_repeated_npu_options_are_argparse_error(capsys, query) -> None:
     with pytest.raises(SystemExit) as error:
-        main(["UB", "-n", "A5", "--soc", "A3"])
+        main([query, "-n", "A5", "--soc", "A3"])
 
     assert error.value.code == 2
     captured = capsys.readouterr()
@@ -297,7 +378,7 @@ def test_help_lists_each_query_and_its_aliases_on_one_line(capsys) -> None:
         "npu-name",
         "all-npu-names",
         "cann-version",
-        "arch",
+        "host-arch",
         "ascend-home",
         "os-name",
     ):
@@ -305,6 +386,7 @@ def test_help_lists_each_query_and_its_aliases_on_one_line(capsys) -> None:
     assert any("ai-core-count" in line and "AI Core 数量" in line for line in query_lines)
     assert any("soc" in line and "npu-name" in line for line in query_lines)
     assert any("all-socs" in line and "all-npu-names" in line for line in query_lines)
+    assert any(line.startswith("  host-arch （别名：arch）：") for line in query_lines)
     assert any("c-cores" in line and "cube-cores" in line for line in query_lines)
     assert any("v-cores" in line and "vector-cores" in line for line in query_lines)
     assert any("cann-path" in line and "ascend-home" in line for line in query_lines)
@@ -397,6 +479,11 @@ def test_cli_integrates_alias_config_and_install_info(tmp_path: Path, monkeypatc
     for cached in caches:
         cached.cache_clear()
     try:
+        assert main(["-n", "A5", "npu-name"]) == 0
+        captured = capsys.readouterr()
+        assert captured.out == "Ascend950PR_9589\n"
+        assert captured.err == ""
+
         assert main(["-n", "A5", "cores"]) == 0
         captured = capsys.readouterr()
         assert captured.out == "ai-cores: 32\ncube-cores: 32\nvector-cores: 64\n"

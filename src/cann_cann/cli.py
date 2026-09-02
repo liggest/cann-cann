@@ -18,6 +18,7 @@ class _QueryKind(Enum):
     SIZE = auto()
     PLATFORM_VALUE = auto()
     AGGREGATE = auto()
+    NPU_NAME = auto()
     GLOBAL = auto()
 
 
@@ -63,7 +64,13 @@ _QUERY_SPECS = (
     ),
     QuerySpec("cores", (), "AI、Cube 和 Vector Core 数量", _QueryKind.AGGREGATE),
     QuerySpec("npu-arch", (), "NPU 架构编号", _QueryKind.PLATFORM_VALUE, "npu_arch"),
-    QuerySpec("npu-name", ("soc",), "ACL 探测到的 NPU 名称", _QueryKind.GLOBAL, "npu_name"),
+    QuerySpec(
+        "npu-name",
+        ("soc",),
+        "当前 NPU 型号，或指定型号的标准名称",
+        _QueryKind.NPU_NAME,
+        "npu_name",
+    ),
     QuerySpec(
         "all-npu-names",
         ("all-socs",),
@@ -72,7 +79,7 @@ _QUERY_SPECS = (
         "all_npu_names",
     ),
     QuerySpec("cann-version", (), "CANN 安装版本", _QueryKind.GLOBAL, "cann_version"),
-    QuerySpec("arch", (), "主机处理器架构", _QueryKind.GLOBAL, "host_arch"),
+    QuerySpec("host-arch", ("arch",), "主机处理器架构", _QueryKind.GLOBAL, "host_arch"),
     QuerySpec(
         "ascend-home",
         ("cann-home", "ascend-root", "cann-root", "ascend-path", "cann-path"),
@@ -254,6 +261,10 @@ def _run(args: argparse.Namespace) -> _CLIResult:
         return function(npu_name=args.npu_name)
     if spec.kind is _QueryKind.AGGREGATE:
         return _run_cores(args.npu_name)
+    if spec.kind is _QueryKind.NPU_NAME:
+        if args.npu_name is not None:
+            return cann_cann.resolve_npu_name(args.npu_name)
+        return cann_cann.npu_name()
 
     _reject_npu_name(args, spec.name)
     function = getattr(cann_cann, spec.api_name)

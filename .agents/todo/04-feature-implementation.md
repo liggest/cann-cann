@@ -330,3 +330,46 @@ usage: ccann ...
 - [x] 构建 wheel 与 sdist，并在隔离安装的 wheel 中验证两个入口的版本、无参数、帮助和
   退出码 2 错误指引。
 - [x] 由主 Agent 检视实现及验证结果后，再统一更新本章状态。
+
+## 15. CLI 主机架构名称与显式 NPU 型号查询微调
+
+本章只调整 CLI 查询名称及 `npu-name` 与显式型号选项组合时的语义；Python API、型号
+解析规则、自动探测行为和其他查询的参数约束保持不变
+
+### 15.1 将 `host-arch` 设为主查询名
+
+- [x] 将主机处理器架构的 CLI 标准查询名由 `arch` 改为 `host-arch`，继续调用公开的
+  `host_arch()`，返回值与退出码不变
+- [x] 保留 `arch` 作为 `host-arch` 的兼容别名；大小写不敏感及连字符、下划线等价规则
+  继续由统一查询注册表提供
+- [x] 完整帮助以 `host-arch` 为主名称，并在同一行将 `arch` 显示为别名，使 CLI 与
+  Python API 的命名主次一致
+
+### 15.2 允许显式型号与 `npu-name` 查询组合
+
+- [x] 不带型号选项执行 `npu-name` 或 `soc` 时保持现有行为，继续调用 `npu_name()` 并通过
+  ACL 返回当前环境的 NPU 型号
+- [x] 带 `-n NAME`、`--npu-name NAME` 或 `--soc NAME` 执行 `npu-name` 或 `soc` 时，调用
+  公开的 `resolve_npu_name(NAME)`，输出当前 CANN 包配置中实际存在的标准名称，不调用 ACL
+- [x] 显式输入可以使用固定简称、大小写变体、无 `Ascend` 前缀或标准名称，并完全复用
+  `resolve_npu_name()` 的既有解析与错误语义，不在 CLI 中复制名称匹配逻辑
+- [x] 只为 `npu-name` 查询及其 `soc` 别名放开型号选项；`all-npu-names`、`cann-version`、
+  `host-arch` 等其他全局查询仍拒绝型号选项，所有非大小查询仍拒绝单位选项
+- [x] 重复使用多个型号选项的 argparse 错误规则保持不变；未知或当前 CANN 包中不存在的
+  显式型号继续作为领域错误返回退出码 1
+
+### 15.3 测试、文档与验收
+
+- [x] 测试 `host-arch` 与 `arch` 输出一致且都只调用 `host_arch()`；帮助文本以
+  `host-arch` 为主名称并展示 `arch` 别名
+- [x] 测试 `npu-name` 和 `soc` 在不带型号选项时仍调用 `npu_name()`，且不调用
+  `resolve_npu_name()`
+- [x] 覆盖三种型号选项、query 前后位置、固定简称和标准名称，确认显式 `npu-name` 查询只
+  调用 `resolve_npu_name()` 并输出其标准名称，不调用 `npu_name()`
+- [x] 测试显式型号无法解析时返回退出码 1，单位选项、重复型号选项及其他全局查询的既有
+  参数错误与基础指引保持不变
+- [x] 更新 `docs/usage.md` 的 CLI 查询表与必要示例，说明 `host-arch`/`arch` 的主次以及
+  `ccann -n A5 npu-name` 返回标准配置名称；README 仅在核心示例确有必要时调整
+- [x] 运行 Ruff format、Ruff lint、完整 pytest、全仓 pre-commit，并构建 wheel 与 sdist
+- [x] 子 Agent 完成实现后不得勾选本章待办；由主 Agent 检视代码、测试、文档及验证结果，
+  确认符合本章方案后再统一标记完成

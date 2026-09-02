@@ -58,6 +58,9 @@ ccann -n A2 cores
 # ai-cores: 20
 # cube-cores: 20
 # vector-cores: 40
+
+ccann -n A5 npu-name
+# Ascend950PR_9589
 ```
 
 > 这种方式不要求环境上有对应硬件，只需 CANN 包中存在该型号的配置文件即可
@@ -115,10 +118,10 @@ ccann
 
 | 查询项 | 常用别名 | 说明 |
 | --- | --- | --- |
-| `npu-name` | `soc` | 当前 NPU 型号 |
+| `npu-name` | `soc` | 当前 NPU 型号，或指定型号的标准名称 |
 | `all-npu-names` | `all-socs` | CANN 包配置中可查询的全部 NPU 型号 |
 | `cann-version` |  | CANN 安装版本 |
-| `arch` |  | 主机处理器架构 |
+| `host-arch` | `arch` | 主机处理器架构 |
 | `ascend-home` | `cann-home` | CANN 安装根目录 |
 | `os-name` | `os` | 操作系统名称与版本 |
 
