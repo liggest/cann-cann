@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 import cann_cann
-from cann_cann.errors import PlatformConfigError
+from cann_cann.errors import CANNNotFoundError, PlatformConfigError
 
 FIXTURES = Path(__file__).parent / "fixtures" / "platform_config"
 
@@ -93,9 +93,22 @@ def test_explicit_name_does_not_detect_npu(monkeypatch) -> None:
 
 
 @pytest.mark.parametrize("npu_name", ["", "../Ascend910B2", "foo/bar"])
-def test_invalid_npu_name_is_a_value_error(npu_name: str) -> None:
+def test_invalid_npu_name_is_a_value_error(monkeypatch, npu_name: str) -> None:
+    monkeypatch.setattr(cann_cann, "ascend_home", lambda: FIXTURES.parents[2])
+    monkeypatch.setattr(cann_cann, "host_arch", lambda: "aarch64")
+
     with pytest.raises(ValueError, match="NPU 名称无效"):
         cann_cann.platform_config(npu_name)
+
+
+def test_platform_config_reports_missing_cann_environment(monkeypatch) -> None:
+    def missing_cann_home():
+        raise CANNNotFoundError("找不到 CANN 安装根目录")
+
+    monkeypatch.setattr(cann_cann, "ascend_home", missing_cann_home)
+
+    with pytest.raises(CANNNotFoundError, match="找不到 CANN 安装根目录"):
+        cann_cann.platform_config("Ascend910B2")
 
 
 @pytest.mark.parametrize(

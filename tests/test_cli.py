@@ -341,7 +341,23 @@ def test_argparse_error_appends_basic_guidance(capsys) -> None:
     assert error.value.code == 2
     captured = capsys.readouterr()
     assert captured.out == ""
-    assert captured.err == _input_error("argument --unit: invalid choice: 'invalid' (choose from b, bytes, kb, kib, mb, mib, gb, gib)")
+    error_line, separator, guidance = captured.err.partition("\n\n")
+    prefix = "错误：argument --unit: invalid choice: 'invalid' (choose from "
+    assert error_line.startswith(prefix)
+    assert error_line.endswith(")")
+    choices = error_line[len(prefix) : -1]
+    assert tuple(choice.strip("'\"") for choice in choices.split(", ")) == (
+        "b",
+        "bytes",
+        "kb",
+        "kib",
+        "mb",
+        "mib",
+        "gb",
+        "gib",
+    )
+    assert separator == "\n\n"
+    assert guidance == _basic_guidance()
 
 
 @pytest.mark.parametrize("command", ["cann-cann", "ccann"])
