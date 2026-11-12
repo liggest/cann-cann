@@ -17,6 +17,8 @@ pip install cann-cann
 
 > 支持 Python >= 3.10；需要安装 CANN 并加载环境变量
 
+AI Agent 安装后可运行 `cann-cann skill` 查看适合直接执行的快速上手说明
+
 ## 命令行
 
 提供 `cann-cann` 与作为简称的 `ccann` 命令，使用任一命令均可

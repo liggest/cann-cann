@@ -27,6 +27,8 @@ cann-cann -v
 
 > 也可使用 `ccann -v`，`ccann` 是 `cann-cann` 的别名
 
+AI Agent 可以运行 `cann-cann skill`，直接查看查询项、参数组合和脚本集成说明
+
 ### 2. 查询当前 NPU 型号与参数
 
 cann-cann 能够获取当前环境的 NPU 型号与常用硬件参数
@@ -124,8 +126,11 @@ ccann
 | `host-arch` | `arch` | 主机处理器架构 |
 | `ascend-home` | `cann-home` | CANN 安装根目录 |
 | `os-name` | `os` | 操作系统名称与版本 |
+| `skill` |  | AI Agent 快速上手技能 |
 
 > `all-npu-names` 列出的是 CANN 包配置中的可查询型号，并非本机 NPU 设备枚举
+
+`skill` 查询不需要 CANN 环境；它只输出随 cann-cann 安装的 AI Agent 快速上手技能
 
 更多示例
 
@@ -163,6 +168,7 @@ ccann cann-version
 | `cube-cores`、`vector-cores` | `cube_core_count()`、`vector_core_count()` | `int` |
 | `npu-arch` | `npu_arch()` | `int` |
 | `ascend-home` | `ascend_home()` | `Path` |
+| `skill` | `agent_skill()` | `str` |
 
 > - 查看存储单元大小的函数接受 `unit` 参数
 > - 与 NPU 型号相关的查询函数接受可选的 `npu_name`

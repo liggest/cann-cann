@@ -173,6 +173,18 @@ def test_public_environment_helpers_forward(monkeypatch, tmp_path: Path) -> None
     assert cann_cann.os_name() == "Example OS 1"
 
 
+def test_agent_skill_is_packaged_and_self_describing() -> None:
+    skill = cann_cann.agent_skill()
+    frontmatter, body = skill.removeprefix("---\n").split("\n---\n", maxsplit=1)
+
+    assert "name: cann-cann" in frontmatter
+    assert "description:" in frontmatter
+    assert "cann-cann -n A5 npu-name" in body
+    assert "cann-cann UB --kb" in body
+    assert "查询项或参数错误为 2" in body
+    assert "ACL" not in body
+
+
 def test_missing_convenience_field_has_domain_error(tmp_path: Path) -> None:
     path = tmp_path / "missing-value.ini"
     path.write_text(

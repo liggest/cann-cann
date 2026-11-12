@@ -373,3 +373,45 @@ usage: ccann ...
 - [x] 运行 Ruff format、Ruff lint、完整 pytest、全仓 pre-commit，并构建 wheel 与 sdist
 - [x] 子 Agent 完成实现后不得勾选本章待办；由主 Agent 检视代码、测试、文档及验证结果，
   确认符合本章方案后再统一标记完成
+
+## 16. AI Agent 快速上手技能
+
+为安装 cann-cann 后的 AI Agent 提供比 `-h` 更直接、可执行的快速上手说明，减少枚举查询项、
+试探参数组合和定位包内文档的成本。本章只提供静态使用指导，不增加 CANN 或 NPU 探测行为
+
+### 16.1 技能设计与打包
+
+- [x] 在 `src/cann_cann/skills/cann-cann/SKILL.md` 保留唯一的技能源文件，使用准确的 YAML
+  frontmatter 描述适用场景，并作为 `cann_cann` 包资源随 wheel 和 sdist 发布；不在
+  `.agents/skills` 维护第二份副本
+- [x] 技能保持自包含和易于快速读取，首先引导 Agent 直接尝试当前型号、大小、核心和 CANN 版本
+  查询，再给出指定型号、架构及主机信息等代表性命令
+- [x] 说明会影响 Agent 正确调用的规则：显式型号与简称、大小单位、适用 `-n` 的查询、稳定输出、
+  退出码及 CLI/Python API 的选择；将环境准备移到失败排查，不暴露 ACL 等内部实现概念
+- [x] 增加公开只读 API 读取内置技能文本，使用标准库资源接口定位安装包内文件，不依赖源码树路径，
+  并同步公开导出、中文 docstring 和类型标注
+
+### 16.2 `skill` 查询项
+
+- [x] 在集中式查询注册表中增加全局查询项 `skill`，由 `cann-cann skill` 和 `ccann skill` 原样
+  输出内置技能，成功时 stdout 只包含技能文本且退出码为 0
+- [x] `skill` 不接受 NPU 名称或单位选项，复用全局查询的参数校验、错误输出和退出码，不建立专用
+  分派分支，也不复制技能内容到 CLI 模块
+- [x] 将 `skill` 纳入 `-h` 查询列表，并在 README 安装位置和 `docs/usage.md` 中用一句话提供
+  AI Agent 快速上手入口，详细用法仍以技能本体和使用指南各自的目标读者为准
+
+### 16.3 pip 安装完成提示
+
+- [x] 核实 PEP 517、wheel 与 pip 是否提供由项目声明的标准安装后消息机制，要求同时适用于从
+  PyPI wheel、wheel 缓存和 sdist 构建后的安装
+- [x] 未发现同时适用于 PyPI wheel、wheel 缓存和 sdist 安装的标准安装后消息机制，因此未引入
+  仅在部分安装路径生效的构建输出、传统 `setup.py` 安装钩子、`.pth` 启动副作用或定制 pip；
+  已通过 PyPI/README 安装说明和 CLI 帮助暴露 `cann-cann skill` 作为安全替代
+
+### 16.4 测试与验收
+
+- [x] 测试公开 API 返回完整技能文本，frontmatter 的名称与描述有效，关键调用规则和命令存在
+- [x] 测试 `skill` 查询通过公开 API 输出内容、拒绝 NPU 与单位选项，并验证帮助列表包含该查询
+- [x] 构建 wheel 与 sdist，检查技能资源进入两类产物；在隔离环境安装 wheel 后运行
+  `cann-cann skill`，确认无需源码树或真实 CANN 环境即可使用
+- [x] 运行 Ruff format、Ruff lint、完整 pytest、全仓 pre-commit 和无源码构建检查，验证通过

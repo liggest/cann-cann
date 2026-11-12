@@ -5,3 +5,4 @@ from importlib.metadata import version
 import cann_cann
 
 assert cann_cann.__version__ == version("cann-cann")
+assert cann_cann.agent_skill().startswith("---\nname: cann-cann\n")

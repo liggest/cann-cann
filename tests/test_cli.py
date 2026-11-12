@@ -280,6 +280,15 @@ def test_global_queries_and_aliases(monkeypatch, capsys, query, api_name, result
     assert captured.err == ""
 
 
+def test_skill_query_prints_public_agent_skill(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(cann_cann, "agent_skill", lambda: "---\nname: cann-cann\n---\n\n# Quick start")
+
+    assert main(["skill"]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "---\nname: cann-cann\n---\n\n# Quick start\n"
+    assert captured.err == ""
+
+
 @pytest.mark.parametrize("query", ["host-arch", "HOST_ARCH", "arch"])
 def test_host_arch_query_and_alias_only_call_host_arch(monkeypatch, capsys, query) -> None:
     calls = []
@@ -303,6 +312,7 @@ def test_host_arch_query_and_alias_only_call_host_arch(monkeypatch, capsys, quer
         ("all-npu-names", "all_npu_names"),
         ("cann-version", "cann_version"),
         ("host-arch", "host_arch"),
+        ("skill", "agent_skill"),
     ],
 )
 @pytest.mark.parametrize("option", ["-n", "--npu-name", "--soc"])
@@ -377,7 +387,7 @@ def test_help_lists_each_query_and_its_aliases_on_one_line(capsys) -> None:
 
     output = capsys.readouterr().out
     query_lines = output.split("可用的查询项：\n", maxsplit=1)[1].split("\n\n", maxsplit=1)[0].splitlines()
-    assert len(query_lines) == 18
+    assert len(query_lines) == 19
     for query in (
         "UB",
         "L0A",
@@ -397,6 +407,7 @@ def test_help_lists_each_query_and_its_aliases_on_one_line(capsys) -> None:
         "host-arch",
         "ascend-home",
         "os-name",
+        "skill",
     ):
         assert sum(line.startswith(f"  {query}") for line in query_lines) == 1
     assert any("ai-core-count" in line and "AI Core 数量" in line for line in query_lines)

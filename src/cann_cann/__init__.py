@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from functools import cache, lru_cache
+from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -188,6 +189,13 @@ def os_name() -> str:
     return _environment.os_name()
 
 
+def agent_skill() -> str:
+    """返回随安装包发布的 cann-cann AI Agent 技能文本"""
+
+    path = files("cann_cann").joinpath("skills").joinpath("cann-cann").joinpath("SKILL.md")
+    return path.read_text(encoding="utf-8").rstrip()
+
+
 __all__ = [
     "__version__",
     "AICoreSpecSection",
@@ -205,6 +213,7 @@ __all__ = [
     "SizeUnit",
     "SoCInfoSection",
     "VersionSection",
+    "agent_skill",
     "ai_core_count",
     "all_npu_names",
     "ascend_home",

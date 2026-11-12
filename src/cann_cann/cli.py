@@ -88,6 +88,7 @@ _QUERY_SPECS = (
         "ascend_home",
     ),
     QuerySpec("os-name", ("os",), "主机操作系统名称", _QueryKind.GLOBAL, "os_name"),
+    QuerySpec("skill", (), "AI Agent 快速上手技能", _QueryKind.GLOBAL, "agent_skill"),
 )
 
 
